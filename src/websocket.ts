@@ -30,7 +30,11 @@ export function create(url: string): WebSocketSubject<any> & WebSocketExtensions
   });
 
   ret.connect = function(): Subscription {
-    return this.subscribe();
+    const ret = this.subscribe();
+
+    // Calling unsubscribe() on the top-level connect() should tear it all down
+    ret.add(this);
+    return ret;
   };
 
   ret.call = function(content: any) {
