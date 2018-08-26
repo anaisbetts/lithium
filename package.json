@@ -4,7 +4,7 @@
   "description": "A code environment to write Home Assistant scripts",
   "scripts": {
     "doc": "echo \"esdoc may not work correctly\" && esdoc -c ./esdoc.json",
-    "compile": "tsc",
+    "compile": "git clean -xdf ./lib && tsc",
     "prepublish": "npm run compile",
     "lint": "tslint \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "mocha --compilers ts:ts-node/register ./test/*",

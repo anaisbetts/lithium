@@ -13,32 +13,21 @@ interface WebSocketExtensions {
   listen(eventType?: string): Observable<any>;
 }
 
-export function create(url: string): WebSocketSubject<any> & WebSocketExtensions {
-  const shutUpTypeScript: any = IsomorphicWebSocket;
+export type HomeAssistantSocket = WebSocketSubject<any> & WebSocketExtensions;
+type HomeAssistantSocketPriv = HomeAssistantSocket & { sequence: number };
 
-  let sequence = 1;
-  const ret: any = webSocket({
-    url,
-    serializer: (val: any) => {
-      if (val.type === 'auth') { return JSON.stringify(val); }
-      return JSON.stringify({
-        id: sequence++,
-        ...val,
-      });
-    },
-    WebSocketCtor: shutUpTypeScript
-  });
-
-  ret.connect = function(): Subscription {
+const WebSocketMixins: WebSocketExtensions = {
+  connect: function(this: HomeAssistantSocketPriv): Subscription {
+    this.sequence = 1;
     const ret = this.subscribe();
 
     // Calling unsubscribe() on the top-level connect() should tear it all down
     ret.add(this);
     return ret;
-  };
+  },
 
-  ret.call = function(content: any) {
-    const currentSeq = sequence;
+  call: function(this: HomeAssistantSocketPriv, content: any) {
+    const currentSeq = this.sequence;
     const promiseRet = this.pipe(
       filter((x: any) => x.id === currentSeq),
       flatMap((x: any) => {
@@ -54,9 +43,9 @@ export function create(url: string): WebSocketSubject<any> & WebSocketExtensions
 
     this.next(content);
     return promiseRet;
-  };
+  },
 
-  ret.auth = function(password: string) {
+  auth: function(this: HomeAssistantSocketPriv, password: string) {
     const ret = this.pipe(
       filter((x: any) => x.type !== 'auth_required'),
       flatMap((x: any) => {
@@ -68,14 +57,14 @@ export function create(url: string): WebSocketSubject<any> & WebSocketExtensions
 
     this.next({type: 'auth', api_password: password});
     return ret;
-  };
+  },
 
-  ret.listen = function(eventType?: string): Observable<any> {
+  listen: function(this: HomeAssistantSocketPriv, eventType?: string): Observable<any> {
     return Observable.create((subj: Observer<any>) => {
       let opts: any = {
         type: 'subscribe_events'
       };
-      const currentSeq = sequence;
+      const currentSeq = this.sequence;
       const disp = new Subscription();
 
       if (eventType) { opts.event_type = eventType; }
@@ -105,7 +94,23 @@ export function create(url: string): WebSocketSubject<any> & WebSocketExtensions
 
       return disp;
     });
-  };
+  },
+};
 
-  return ret;
+export function create(url: string): HomeAssistantSocket {
+  const shutUpTypeScript: any = IsomorphicWebSocket;
+
+  const ret: any = webSocket({
+    url,
+    serializer: (val: any) => {
+      if (val.type === 'auth') { return JSON.stringify(val); }
+      return JSON.stringify({
+        id: ret.sequence++,
+        ...val,
+      });
+    },
+    WebSocketCtor: shutUpTypeScript
+  });
+
+  return Object.assign(ret, WebSocketMixins);
 }
