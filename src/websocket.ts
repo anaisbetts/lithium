@@ -9,7 +9,7 @@ const d = require('debug')('ha-lithium:websocket');
 interface WebSocketExtensions {
   auth(password: string): Promise<boolean>;
   connect(): Subscription;
-  nextRpc(content: any): Promise<any>;
+  call(content: any): Promise<any>;
   listen(eventType?: string): Observable<any>;
 }
 
