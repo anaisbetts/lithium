@@ -97,11 +97,11 @@ const WebSocketMixins: WebSocketExtensions = {
   },
 };
 
-export function create(url: string): HomeAssistantSocket {
+export function create(host: string): HomeAssistantSocket {
   const shutUpTypeScript: any = IsomorphicWebSocket;
 
   const ret: any = webSocket({
-    url,
+    url: `${host}/api/websocket`,
     serializer: (val: any) => {
       if (val.type === 'auth') { return JSON.stringify(val); }
       return JSON.stringify({
