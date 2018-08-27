@@ -51,19 +51,35 @@ export class HomeAssistant extends Model {
 }
 
 export class Entity extends Model {
-  name: string;
+  id: string;
+  group: string;
   entityState: Updatable<any>;
+  assistant: HomeAssistant;
 
-  constructor(assistant: HomeAssistant, group: string, name: string) {
+  constructor(assistant: HomeAssistant, group: string, id: string) {
     super();
 
-    this.name = name;
+    this.assistant = assistant;
+    this.id = id;
+    this.group = group;
+
     this.entityState = new StreamUpdatable(assistant.stateChanges.pipe(flatMap(stateChange => {
-      const id = `${group}.${name}`;
-      if (stateChange.entity_id !== id) { return empty(); }
+      const fullId = `${group}.${id}`;
+      if (stateChange.entity_id !== fullId) { return empty(); }
 
       return of(stateChange);
     })));
+  }
+
+  callService(service: string, domain: string, data?: any) {
+    return this.assistant.socket.call({
+      type: 'call_service',
+      domain, service,
+      service_data: {
+        entity_id: `${this.group}.${this.id}`,
+        ...(data || {})
+      }
+    });
   }
 }
 
@@ -76,5 +92,9 @@ export class Light extends Entity {
 
     this.state = new StreamUpdatable(this.entityState.pipe(map(x => x.state)));
     this.attributes = new StreamUpdatable(this.entityState.pipe(map(x => x.attributes)));
+  }
+
+  toggle() {
+    return this.callService('toggle', 'light');
   }
 }
