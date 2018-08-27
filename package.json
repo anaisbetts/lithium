@@ -27,7 +27,7 @@
   "typings": "lib/src/index.d.ts",
   "homepage": "https://github.com/paulcbetts/spawn-rx",
   "dependencies": {
-    "@whenjs/when": "^0.1.0",
+    "@whenjs/when": "^0.2.0",
     "debug": "^3.1.0",
     "isomorphic-ws": "^4.0.1",
     "rxjs": "^6.2.2",
