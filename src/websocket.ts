@@ -2,6 +2,7 @@ import * as IsomorphicWebSocket from 'isomorphic-ws';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { empty, Observable, Observer, of, throwError, Subscription } from 'rxjs';
 import { filter, flatMap, take } from 'rxjs/operators';
+import axios, { AxiosInstance } from 'axios';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('ha-lithium:websocket');
@@ -13,8 +14,11 @@ interface WebSocketExtensions {
   listen(eventType?: string): Observable<any>;
 }
 
-export type HomeAssistantSocket = WebSocketSubject<any> & WebSocketExtensions;
-type HomeAssistantSocketPriv = HomeAssistantSocket & { sequence: number };
+export type HomeAssistantSocket = WebSocketSubject<any> &
+  WebSocketExtensions &
+  { rest: AxiosInstance; };
+
+type HomeAssistantSocketPriv = HomeAssistantSocket & { sequence: number, baseUrl: string };
 
 const WebSocketMixins: WebSocketExtensions = {
   connect: function(this: HomeAssistantSocketPriv): Subscription {
@@ -56,6 +60,13 @@ const WebSocketMixins: WebSocketExtensions = {
     ).toPromise();
 
     this.next({type: 'auth', api_password: password});
+    ret.then(() => {
+      this.rest = axios.create({
+        baseURL: this.baseUrl.replace(/^ws/, 'http'),
+        headers: { 'x-ha-access': password, }
+      });
+    });
+
     return ret;
   },
 
@@ -112,5 +123,5 @@ export function create(host: string): HomeAssistantSocket {
     WebSocketCtor: shutUpTypeScript
   });
 
-  return Object.assign(ret, WebSocketMixins);
+  return Object.assign(ret, { baseUrl: host.replace(/^ws/i, 'http') }, WebSocketMixins);
 }

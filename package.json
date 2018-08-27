@@ -28,6 +28,7 @@
   "homepage": "https://github.com/paulcbetts/spawn-rx",
   "dependencies": {
     "@whenjs/when": "^0.2.0",
+    "axios": "^0.18.0",
     "debug": "^3.1.0",
     "isomorphic-ws": "^4.0.1",
     "rxjs": "^6.2.2",
